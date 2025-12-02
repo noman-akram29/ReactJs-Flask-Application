@@ -19,20 +19,20 @@ pipeline {
                 git branch: 'dev', credentialsId: 'GitHub-Token-for-Jenkins', url: 'https://github.com/noman-akram29/ReactJs-Flask-Application.git'
             }
         }
-        stage('Install Dependencies') {
+        stage('Install Frontend  Dependencies') {
             steps {
                 dir('frontend') {
                     sh 'npm install'
                 }
             }
         }
-        stage('Install Backend Dependencies') {
-            steps {
-                dir('backend') {
-                    sh 'pip install -r requirements.txt'
-                }
-            }
-        }
+        // stage('Install Backend Dependencies') {
+        //     steps {
+        //         dir('backend') {
+        //             sh 'pip install -r requirements.txt'
+        //         }
+        //     }
+        // }
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
@@ -50,17 +50,8 @@ pipeline {
         stage('Quality Gate Scan') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true, credentialsId: 'SonarQube-Token-for-Jenkins'
-                }
-            }
-        }
-        stage('OWASP Python Dependency Scan') {
-            steps {
-                dir('backend') {
-                    sh '''
-                        pip install safety
-                        safety check --full-report --file=requirements.txt --output safety-report.html || true
-                    '''
+                    waitForQualityGate abortPipeline: true, 
+                        credentialsId: 'SonarQube-Token-for-Jenkins'
                 }
             }
         }
@@ -73,10 +64,21 @@ pipeline {
                 dependencyCheckPublisher pattern: 'dependency-check-report.html'
             }
         }
+        // stage('OWASP Python Dependency Scan') {
+        //     steps {
+        //         dir('backend') {
+        //             sh '''
+        //                 pip install safety
+        //                 safety check --full-report --file=requirements.txt --output safety-report.html || true
+        //             '''
+        //         }
+        //     }
+        // }
         stage('Trivy FileSystem Scan') {
             steps {
                 sh '''
-                    trivy fs --exit-code 0 --no-progress --format table -o trivy-fs-report.html .
+                    trivy fs --exit-code 0 --no-progress --format table \
+                    -o trivy-fs-report.html .
                     # trivy fs --exit-code 1 --no-progress --severity HIGH,CRITICAL .
                 '''
             }
@@ -100,13 +102,11 @@ pipeline {
         stage('Trivy Image Scan') {
             steps {
                 sh '''
-                    trivy image --format table -o trivy-image-report.html ${DOCKER_IMAGE}:${IMAGE_TAG} || true
-                    
-                    # Scan for HIGH+ but DO NOT fail the build
-                    trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG} || echo "HIGH/CRITICAL vulnerabilities found (ignored)"
-                    
-                    # Optional: Fail only on CRITICAL (more realistic)
-                    # trivy image --exit-code 1 --no-progress --severity CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG}
+                    trivy image --format table -o trivy-image-report.html \
+                    ${DOCKER_IMAGE}:${IMAGE_TAG} || true
+
+                    trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
+                    ${DOCKER_IMAGE}:${IMAGE_TAG} || true
                 '''
             }
         }
