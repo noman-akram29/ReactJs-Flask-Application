@@ -83,22 +83,39 @@ pipeline {
                 '''
             }
         }
-        stage('Build, Tag & Push Docker Image') {
-            steps {
-                script {
-                    def app = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}")
-                    docker.withRegistry('', 'DockerHub-Token-for-Jenkins') {
-                        app.push()
-                        app.push('latest')
-                    }
-                }
-            }
-        }
-        // stage('Deploy via docker-compose') {
+        // stage('Build & Push Docker Images') {
         //     steps {
-        //         sh "docker compose up --build"
+        //         script {
+        //             // Backend build
+        //             def backend = docker.build(
+        //                 "nomanakram29/reactjs-flask-backend:${IMAGE_TAG}",
+        //                 "backend"
+        //             )
+
+        //             // Frontend build
+        //             def frontend = docker.build(
+        //                 "nomanakram29/reactjs-flask-frontend:${IMAGE_TAG}",
+        //                 "frontend"
+        //             )
+
+        //             docker.withRegistry('', 'DockerHub-Token-for-Jenkins') {
+        //                 backend.push()
+        //                 frontend.push()
+        //             }
+        //         }
         //     }
-        // }   
+        // }
+
+        stage('Build via docker-compose') {
+            steps {
+                sh "docker compose build"
+            }
+        }   
+        stage('Push via docker-compose') {
+            steps {
+                sh "docker compose build"
+            }
+        }   
         stage('Trivy Image Scan') {
             steps {
                 sh '''
