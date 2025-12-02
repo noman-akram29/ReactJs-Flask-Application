@@ -1,0 +1,117 @@
+pipeline {
+    agent any
+    tools {
+        jdk 'JDK-21.0.3+9-Tool'
+        nodejs 'NodeJS-25.2.1-Tool'
+    }
+    environment {
+        SCANNER_HOME = tool 'SonarQube-Scanner-Tool'
+        DOCKER_IMAGE = 'nomanakram29/reactjs-flask-app'
+        IMAGE_TAG    = "${BUILD_NUMBER}"
+    }
+    stages {
+        stage('WorkSpace CleanUp') {
+            steps { cleanWs() }
+        }
+
+        stage('CheckOut from SCM') {
+            steps {
+                git branch: 'dev', credentialsId: 'GitHub-Token-for-Jenkins', url: 'https://github.com/noman-akram29/ReactJs-Flask-Application.git'
+            }
+        }
+        stage('Trivy FileSystem Scan') {
+            steps {
+                sh '''
+                    trivy fs --exit-code 0 --no-progress --format table -o trivy-fs-report.html .
+                    trivy fs --exit-code 1 --no-progress --severity HIGH,CRITICAL .
+                '''
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                sh "npm install"
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube-Server') {
+                    sh '''
+                        $SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectKey=ReactJs-Flask-Application \
+                        -Dsonar.projectName="ReactJs-Flask-Application" \
+                        -Dsonar.sources=. \
+                        -Dsonar.exclusions=node_modules/**,coverage/**,dist/**,test/** \
+                        -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                        -Dsonar.sourceEncoding=UTF-8
+                    '''
+                }
+            }
+        }
+        stage('Quality Gate Scan') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true, credentialsId: 'SonarQube-Token-for-Jenkins'
+                }
+            }
+        }
+        stage('OWASP Dependency-Check Scan') {
+            steps {
+                dependencyCheck additionalArguments: '''
+                    --scan ./
+                    --format ALL
+                    --enableExperimental
+                ''', odcInstallation: 'Dependency-Check-12.1.9-Tool'
+                dependencyCheckPublisher pattern: 'dependency-check-report.html'
+            }
+        }
+        // stage('Build, Tag & Push Docker Image') {
+        //     steps {
+        //         script {
+        //             def app = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}")
+        //             docker.withRegistry('', 'Docker-Creds-for-Jenkins') {
+        //                 app.push()
+        //                 app.push('latest')
+        //             }
+        //         }
+        //     }
+        // }
+        stage('Deploy via docker-compose') {
+            steps {
+                sh "docker compose up --build"
+            }
+        }   
+        stage('Trivy Image Scan') {
+            steps {
+                sh '''
+                    trivy image --format table -o trivy-image-report.html ${DOCKER_IMAGE}:${IMAGE_TAG} || true
+                    
+                    # Scan for HIGH+ but DO NOT fail the build
+                    trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG} || echo "HIGH/CRITICAL vulnerabilities found (ignored)"
+                    
+                    # Optional: Fail only on CRITICAL (more realistic)
+                    # trivy image --exit-code 1 --no-progress --severity CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG}
+                '''
+            }
+        }
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: '*-report.html', allowEmptyArchive: true, fingerprint: true
+            sh "docker rmi ${DOCKER_IMAGE}:${IMAGE_TAG} || true"
+            sh "docker rmi ${DOCKER_IMAGE}:latest || true"
+        }
+
+        success {
+            echo '=================================================='
+            echo 'CI PASSED! Image ready for production'
+            echo "Image: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+            echo 'Go to GitHub → Create Pull Request: dev → main'
+            echo 'After you merge, deployment will start automatically'
+            echo '=================================================='
+        }
+
+        failure {
+            echo 'CI FAILED! Fix the issues and push again.'
+        }
+    }
+}
