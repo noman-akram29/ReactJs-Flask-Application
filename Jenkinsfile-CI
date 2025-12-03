@@ -136,23 +136,30 @@ pipeline {
                         serverUrl: 'https://172.31.68.78:6443',
                         clusterName: 'kubernetes'
                     ) {
-                        sh """
-                            echo "Updating image tags in manifest..."
-                            sed -i "s|image: nomanakram29/reactjs-flask-backend:.*|image: nomanakram29/reactjs-flask-backend:\${FINAL_TAG}|" k8s-deployment.yml
-                            sed -i "s|image: nomanakram29/reactjs-flask-frontend:.*|image: nomanakram29/reactjs-flask-frontend:\${FINAL_TAG}|" k8s-deployment.yml
+
+                        sh '''
+                            echo "Updating image tags in manifests..."
+
+                            # Update backend image
+                            sed -i "s|image: nomanakram29/reactjs-flask-backend:.*|image: nomanakram29/reactjs-flask-backend:${IMAGE_TAG}|" k8s-backend-deployment.yml
+
+                            # Update frontend image
+                            sed -i "s|image: nomanakram29/reactjs-flask-frontend:.*|image: nomanakram29/reactjs-flask-frontend:${IMAGE_TAG}|" k8s-frontend-deployment.yml
+
 
                             echo "Applying Kubernetes manifests..."
-                            kubectl apply -f k8s-deployment.yml
+                            kubectl apply -f k8s-backend-deployment.yaml
+                            kubectl apply -f k8s-frontend-deployment.yaml
 
-                            echo "Waiting for rollout to complete..."
-                            kubectl rollout status deployment/react-flask-app --timeout=180s
+                            echo "Waiting for backend rollout..."
+                            kubectl rollout status deployment/flask-backend -n react-flask-app --timeout=120s
 
-                            echo "Deployment successful!"
-                            echo "Backend Service URL:"
-                            kubectl get svc flask-backend-service -n react-flask-app
-                            echo "Frontend Service URL:"
+                            echo "Waiting for frontend rollout..."
+                            kubectl rollout status deployment/react-frontend -n react-flask-app --timeout=120s
+
+                            echo "Getting LoadBalancer Service..."
                             kubectl get svc react-frontend-service -n react-flask-app
-                        """
+                        '''
                     }
                 }
             }
