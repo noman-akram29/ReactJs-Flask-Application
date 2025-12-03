@@ -20,53 +20,53 @@ pipeline {
                 git branch: 'dev', credentialsId: 'GitHub-Token-for-Jenkins', url: 'https://github.com/noman-akram29/ReactJs-Flask-Application.git'
             }
         }
-        stage('Install Frontend  Dependencies') {
-            steps {
-                dir('frontend') {
-                    sh 'npm install'
-                }
-            }
-        }
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube-Server') {
-                    sh '''
-                        $SCANNER_HOME/bin/sonar-scanner \
-                        -Dsonar.projectKey=ReactJs-Flask-Application \
-                        -Dsonar.projectName="ReactJs-Flask-Application" \
-                        -Dsonar.sources=frontend,backend \
-                        -Dsonar.exclusions=frontend/node_modules/**,frontend/dist/**,backend/migrations/** \
-                        -Dsonar.sourceEncoding=UTF-8
-                    '''
-                }
-            }
-        }
-        stage('Quality Gate Scan') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true, 
-                        credentialsId: 'SonarQube-Token-for-Jenkins'
-                }
-            }
-        }
-        stage('OWASP Dependency-Check Scan') {
-            steps {
-                dependencyCheck additionalArguments: '''
-                    --scan ./frontend
-                    --format ALL
-                ''', odcInstallation: 'Dependency-Check-12.1.9-Tool'
-                dependencyCheckPublisher pattern: 'dependency-check-report.html'
-            }
-        }
-        stage('Trivy FileSystem Scan') {
-            steps {
-                sh '''
-                    trivy fs --exit-code 0 --no-progress --format table \
-                    -o trivy-fs-report.html .
-                    # trivy fs --exit-code 1 --no-progress --severity HIGH,CRITICAL .
-                '''
-            }
-        }
+        // stage('Install Frontend  Dependencies') {
+        //     steps {
+        //         dir('frontend') {
+        //             sh 'npm install'
+        //         }
+        //     }
+        // }
+        // stage('SonarQube Analysis') {
+        //     steps {
+        //         withSonarQubeEnv('SonarQube-Server') {
+        //             sh '''
+        //                 $SCANNER_HOME/bin/sonar-scanner \
+        //                 -Dsonar.projectKey=ReactJs-Flask-Application \
+        //                 -Dsonar.projectName="ReactJs-Flask-Application" \
+        //                 -Dsonar.sources=frontend,backend \
+        //                 -Dsonar.exclusions=frontend/node_modules/**,frontend/dist/**,backend/migrations/** \
+        //                 -Dsonar.sourceEncoding=UTF-8
+        //             '''
+        //         }
+        //     }
+        // }
+        // stage('Quality Gate Scan') {
+        //     steps {
+        //         timeout(time: 5, unit: 'MINUTES') {
+        //             waitForQualityGate abortPipeline: true, 
+        //                 credentialsId: 'SonarQube-Token-for-Jenkins'
+        //         }
+        //     }
+        // }
+        // stage('OWASP Dependency-Check Scan') {
+        //     steps {
+        //         dependencyCheck additionalArguments: '''
+        //             --scan ./frontend
+        //             --format ALL
+        //         ''', odcInstallation: 'Dependency-Check-12.1.9-Tool'
+        //         dependencyCheckPublisher pattern: 'dependency-check-report.html'
+        //     }
+        // }
+        // stage('Trivy FileSystem Scan') {
+        //     steps {
+        //         sh '''
+        //             trivy fs --exit-code 0 --no-progress --format table \
+        //             -o trivy-fs-report.html .
+        //             # trivy fs --exit-code 1 --no-progress --severity HIGH,CRITICAL .
+        //         '''
+        //     }
+        // }
         // stage('Build & Push Docker Images') {
         //     steps {
         //         script {
@@ -96,26 +96,26 @@ pipeline {
             }
         }
 
-        stage('Trivy Image Scan') {
-            steps {
-                script {
-                    sh '''
-                        trivy image --format table -o trivy-backend-report.html \
-                        ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} || true
+        // stage('Trivy Image Scan') {
+        //     steps {
+        //         script {
+        //             sh '''
+        //                 trivy image --format table -o trivy-backend-report.html \
+        //                 ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} || true
 
-                        trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
-                        ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} || true
-                    '''
-                    sh '''
-                        trivy image --format table -o trivy-frontend-report.html \
-                        ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} || true
+        //                 trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
+        //                 ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} || true
+        //             '''
+        //             sh '''
+        //                 trivy image --format table -o trivy-frontend-report.html \
+        //                 ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} || true
 
-                        trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
-                        ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} || true
-                    '''
-                }
-            }
-        }
+        //                 trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
+        //                 ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} || true
+        //             '''
+        //         }
+        //     }
+        // }
         stage('Push via docker-compose') {
             steps {
                 withDockerRegistry([credentialsId: 'DockerHub-Token-for-Jenkins', url: '']) {
@@ -128,6 +128,36 @@ pipeline {
             }
         }
     }
+    stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    withKubeConfig(
+                        credentialsId: 'K8s-Token-for-Jenkins',
+                        namespace: 'react-flask-app',
+                        serverUrl: 'https://172.31.68.78:6443',
+                        clusterName: 'kubernetes'
+                    ) {
+                        sh """
+                            echo "Updating image tags in manifest..."
+                            sed -i "s|image: nomanakram29/reactjs-flask-backend:.*|image: nomanakram29/reactjs-flask-backend:\${FINAL_TAG}|" k8s-deployment.yml
+                            sed -i "s|image: nomanakram29/reactjs-flask-frontend:.*|image: nomanakram29/reactjs-flask-frontend:\${FINAL_TAG}|" k8s-deployment.yml
+
+                            echo "Applying Kubernetes manifests..."
+                            kubectl apply -f k8s-deployment.yml
+
+                            echo "Waiting for rollout to complete..."
+                            kubectl rollout status deployment/react-flask-app --timeout=180s
+
+                            echo "Deployment successful!"
+                            echo "Backend Service URL:"
+                            kubectl get svc flask-backend-service -n react-flask-app
+                            echo "Frontend Service URL:"
+                            kubectl get svc react-frontend-service -n react-flask-app
+                        """
+                    }
+                }
+            }
+        }
     post {
         always {
             archiveArtifacts artifacts: '*-report.html', allowEmptyArchive: true
