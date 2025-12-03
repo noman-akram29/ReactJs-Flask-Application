@@ -8,7 +8,7 @@ pipeline {
         SCANNER_HOME = tool 'SonarQube-Scanner-Tool'
         DOCKER_IMAGE_BACKEND  = "nomanakram29/reactjs-flask-backend"
         DOCKER_IMAGE_FRONTEND = "nomanakram29/reactjs-flask-frontend"
-        IMAGE_TAG    = "${BUILD_NUMBER}"
+        IMAGE_TAG    = "latest"
     }
     stages {
         stage('WorkSpace CleanUp') {
@@ -27,13 +27,6 @@ pipeline {
                 }
             }
         }
-        // stage('Install Backend Dependencies') {
-        //     steps {
-        //         dir('backend') {
-        //             sh 'pip install -r requirements.txt'
-        //         }
-        //     }
-        // }
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
@@ -65,16 +58,6 @@ pipeline {
                 dependencyCheckPublisher pattern: 'dependency-check-report.html'
             }
         }
-        // stage('OWASP Python Dependency Scan') {
-        //     steps {
-        //         dir('backend') {
-        //             sh '''
-        //                 pip install safety
-        //                 safety check --full-report --file=requirements.txt --output safety-report.html || true
-        //             '''
-        //         }
-        //     }
-        // }
         stage('Trivy FileSystem Scan') {
             steps {
                 sh '''
@@ -136,10 +119,14 @@ pipeline {
         stage('Push via docker-compose') {
             steps {
                 withDockerRegistry([credentialsId: 'DockerHub-Token-for-Jenkins', url: '']) {
-                    sh "docker compose push"
+                    sh """
+                        docker tag ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} ${DOCKER_IMAGE_BACKEND}:latest
+                        docker tag ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} ${DOCKER_IMAGE_FRONTEND}:latest
+                        docker compose push
+                    """
                 }
             }
-        } 
+        }
     }
     post {
         always {
