@@ -69,7 +69,7 @@ pipeline {
                             sed -i "s|image: nomanakram29/reactjs-flask-frontend:.*|image: nomanakram29/reactjs-flask-frontend:\${FINAL_TAG}|" k8s-deployment.yml
 
                             echo "Applying Kubernetes manifests..."
-                            kubectl apply -f k8s-deployment.yaml
+                            kubectl apply -f k8s-deployment.yml
 
                             echo "Waiting for rollout to complete..."
                             kubectl rollout status deployment/react-flask-app --timeout=180s
