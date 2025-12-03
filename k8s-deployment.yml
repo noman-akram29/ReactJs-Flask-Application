@@ -23,7 +23,7 @@ spec:
       serviceAccountName: react-flask-sa
       containers:
         - name: flask-backend
-          image: nomanakram29/reactjs-flask-backend:latest  # updated by Jenkins
+          image: nomanakram29/reactjs-flask-backend:latest
           ports:
             - containerPort: 5000
           env:
@@ -35,7 +35,7 @@ spec:
               value: super-secret
           imagePullPolicy: Always
         - name: react-frontend
-          image: nomanakram29/reactjs-flask-frontend:latest # updated by Jenkins
+          image: nomanakram29/reactjs-flask-frontend:latest
           ports:
             - containerPort: 5173
           imagePullPolicy: Always
