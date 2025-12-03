@@ -23,13 +23,12 @@ spec:
             - containerPort: 5000
           env:
             - name: FLASK_ENV
-              value: "production"
+              value: production
             - name: JWT_SECRET_KEY
-              value: "super-secret"
+              value: super-secret
             - name: SECRET_KEY
-              value: "super-secret"
-          imagePullPolicy: Always   
-
+              value: super-secret
+          imagePullPolicy: Always
         - name: react-frontend
           image: nomanakram29/reactjs-flask-frontend:latest
           ports:
