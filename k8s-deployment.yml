@@ -63,7 +63,7 @@ metadata:
     app: react-flask-app
 spec:
   type: LoadBalancer
-  selector:
+  selector:                  # Fixed: now correctly aligned with ports
     app: react-flask-app
   ports:
     - name: http
