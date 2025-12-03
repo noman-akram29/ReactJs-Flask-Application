@@ -110,12 +110,15 @@ pipeline {
             steps {
                 sh "docker compose build"
             }
-        }   
+        }
+
         stage('Push via docker-compose') {
             steps {
-                sh "docker compose push"
+                withDockerRegistry([credentialsId: 'DockerHub-Token-for-Jenkins', url: '']) {
+                    sh "docker compose push"
+                }
             }
-        }   
+        } 
         stage('Trivy Image Scan') {
             steps {
                 sh '''
