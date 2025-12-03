@@ -1,15 +1,12 @@
 pipeline {
     agent any
-
     environment {
-        DOCKER_IMAGE_BACKEND = 'nomanakram29/reactjs-flask-backend'
-        DOCKER_IMAGE_FRONTEND = 'nomanakram29/reactjs-flask-frontend'
-        IMAGE_TAG = "${BUILD_NUMBER}"
+        IMAGE_TAG = "${BUILD_NUMBER}" 
+        DOCKER_IMAGE_BACKEND  = "nomanakram29/reactjs-flask-backend"
+        DOCKER_IMAGE_FRONTEND = "nomanakram29/reactjs-flask-frontend"
     }
-
     stages {
-
-        stage('Pull Docker Images') {
+        stage('Pull Images') {
             steps {
                 echo "Pulling latest images from Docker Hub..."
                 sh """
@@ -18,16 +15,17 @@ pipeline {
                 """
             }
         }
-
-        stage('Deploy on Docker') {
+        stage('Deploy via Docker') {
             steps {
-                echo "Deploying via Docker..."
+                echo "Stopping existing containers..."
                 sh """
                     docker stop flask-backend || true
                     docker rm flask-backend || true
                     docker stop react-frontend || true
                     docker rm react-frontend || true
-
+                """
+                echo "Running new containers..."
+                sh """
                     docker run -d --name flask-backend -p 5000:5000 \
                         -e FLASK_ENV=production \
                         -e JWT_SECRET_KEY=super-secret \
@@ -41,14 +39,8 @@ pipeline {
             }
         }
     }
-
     post {
-        success {
-            echo "✅ Deployment Successful!"
-            echo "Frontend accessible on port 5173, Backend on port 5000"
-        }
-        failure {
-            echo "❌ Deployment Failed!"
-        }
+        success { echo "✅ Deployment via Docker Successful!" }
+        failure { echo "❌ Deployment via Docker Failed!" }
     }
 }
