@@ -112,6 +112,26 @@ pipeline {
             }
         }
 
+        stage('Trivy Image Scan') {
+            steps {
+                script {
+                    sh '''
+                        trivy image --format table -o trivy-backend-report.html \
+                        nomanakram29/reactjs-flask-backend:${IMAGE_TAG} || true
+
+                        trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
+                        nomanakram29/reactjs-flask-backend:${IMAGE_TAG} || true
+                    '''
+                    sh '''
+                        trivy image --format table -o trivy-frontend-report.html \
+                        nomanakram29/reactjs-flask-frontend:${IMAGE_TAG} || true
+
+                        trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
+                        nomanakram29/reactjs-flask-frontend:${IMAGE_TAG} || true
+                    '''
+                }
+            }
+        }
         stage('Push via docker-compose') {
             steps {
                 withDockerRegistry([credentialsId: 'DockerHub-Token-for-Jenkins', url: '']) {
@@ -119,17 +139,6 @@ pipeline {
                 }
             }
         } 
-        stage('Trivy Image Scan') {
-            steps {
-                sh '''
-                    trivy image --format table -o trivy-image-report.html \
-                    ${DOCKER_IMAGE}:${IMAGE_TAG} || true
-
-                    trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
-                    ${DOCKER_IMAGE}:${IMAGE_TAG} || true
-                '''
-            }
-        }
     }
     post {
         always {
