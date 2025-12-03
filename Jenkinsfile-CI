@@ -67,29 +67,28 @@ pipeline {
                 '''
             }
         }
-        // stage('Build & Push Docker Images') {
-        //     steps {
-        //         script {
-        //             // Backend build
-        //             def backend = docker.build(
-        //                 "${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}",
-        //                 "backend"
-        //             )
+        stage('Build & Push Docker Images') {
+            steps {
+                script {
+                    // Backend build
+                    def backend = docker.build(
+                        "${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}",
+                        "backend"
+                    )
 
-        //             // Frontend build
-        //             def frontend = docker.build(
-        //                 "${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG}",
-        //                 "frontend"
-        //             )
+                    // Frontend build
+                    def frontend = docker.build(
+                        "${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG}",
+                        "frontend"
+                    )
 
-        //             docker.withRegistry('', 'DockerHub-Token-for-Jenkins') {
-        //                 backend.push()
-        //                 frontend.push()
-        //             }
-        //         }
-        //     }
-        // }
-
+                    docker.withRegistry('', 'DockerHub-Token-for-Jenkins') {
+                        backend.push()
+                        frontend.push()
+                    }
+                }
+            }
+        }
         stage('Build via docker-compose') {
             steps {
                 sh "docker compose build"

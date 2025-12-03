@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-backend
+  namespace: react-flask-app
+  labels:
+    app: flask-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flask-backend
+  template:
+    metadata:
+      labels:
+        app: flask-backend
+    spec:
+      containers:
+        - name: flask-backend
+          image: nomanakram29/reactjs-flask-backend:latest  
+          ports:
+            - containerPort: 5000
+          env:
+            - name: FLASK_ENV
+              value: "development"
+            - name: JWT_SECRET_KEY
+              value: "super-secret"
+            - name: SECRET_KEY
+              value: "super-secret"
+          imagePullPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-backend-service
+  namespace: react-flask-app
+  labels:
+    app: flask-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: flask-backend
+  ports:
+    - port: 5000
+      targetPort: 5000
+      protocol: TCP
