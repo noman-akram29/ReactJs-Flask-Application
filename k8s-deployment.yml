@@ -48,8 +48,8 @@ spec:
   selector:
     app: react-flask-app
   ports:
-    - name: http
-      protocol: TCP
+    - protocol: TCP
+      name: http
       port: 5000
       targetPort: 5000
 
@@ -63,10 +63,10 @@ metadata:
     app: react-flask-app
 spec:
   type: LoadBalancer
-  selector:                  # Fixed: now correctly aligned with ports
+  selector:
     app: react-flask-app
   ports:
-    - name: http
-      protocol: TCP
+    - protocol: TCP
+      name: http
       port: 80
       targetPort: 5173
