@@ -65,8 +65,8 @@ pipeline {
                     ) {
                         sh """
                             echo "Updating image tags in manifest..."
-                            sed -i "s|image: nomanakram29/reactjs-flask-backend:.*|image: nomanakram29/reactjs-flask-backend:\${FINAL_TAG}|" k8s-deployment.yaml
-                            sed -i "s|image: nomanakram29/reactjs-flask-frontend:.*|image: nomanakram29/reactjs-flask-frontend:\${FINAL_TAG}|" k8s-deployment.yaml
+                            sed -i "s|image: nomanakram29/reactjs-flask-backend:.*|image: nomanakram29/reactjs-flask-backend:\${FINAL_TAG}|" k8s-deployment.yml
+                            sed -i "s|image: nomanakram29/reactjs-flask-frontend:.*|image: nomanakram29/reactjs-flask-frontend:\${FINAL_TAG}|" k8s-deployment.yml
 
                             echo "Applying Kubernetes manifests..."
                             kubectl apply -f k8s-deployment.yaml
