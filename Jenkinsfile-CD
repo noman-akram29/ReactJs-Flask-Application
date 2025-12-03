@@ -38,25 +38,55 @@ pipeline {
         //         """
         //     }
         // }
-        stage('Deploy via docker-compose') {
-            steps {
-                echo "Stopping existing docker-compose services (if any)..."
-                sh "docker compose down || true"
+        // stage('Deploy via docker-compose') {
+        //     steps {
+        //         echo "Stopping existing docker-compose services (if any)..."
+        //         sh "docker compose down || true"
 
-                echo "Starting services via docker-compose..."
-                sh "docker compose up -d"
-            }
-        }
+        //         echo "Starting services via docker-compose..."
+        //         sh "docker compose up -d"
+        //     }
+        // }
 
-        stage('Verify Deployment') {
+        // stage('Verify Deployment') {
+        //     steps {
+        //         echo "Checking running containers..."
+        //         sh "docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'"
+        //     }
+        // }
+        stage('Deploy to Kubernetes') {
             steps {
-                echo "Checking running containers..."
-                sh "docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'"
+                script {
+                    withKubeConfig(
+                        credentialsId: 'K8s-Token-for-Jenkins',
+                        namespace: 'react-flask-app',
+                        serverUrl: 'https://172.31.68.78:6443',
+                        clusterName: 'kubernetes'
+                    ) {
+                        sh """
+                            echo "Updating image tags in manifest..."
+                            sed -i "s|image: nomanakram29/reactjs-flask-backend:.*|image: nomanakram29/reactjs-flask-backend:\${FINAL_TAG}|" k8s-deployment.yaml
+                            sed -i "s|image: nomanakram29/reactjs-flask-frontend:.*|image: nomanakram29/reactjs-flask-frontend:\${FINAL_TAG}|" k8s-deployment.yaml
+
+                            echo "Applying Kubernetes manifests..."
+                            kubectl apply -f k8s-deployment.yaml
+
+                            echo "Waiting for rollout to complete..."
+                            kubectl rollout status deployment/react-flask-app --timeout=180s
+
+                            echo "Deployment successful!"
+                            echo "Backend Service URL:"
+                            kubectl get svc flask-backend-service -n react-flask-app
+                            echo "Frontend Service URL:"
+                            kubectl get svc react-frontend-service -n react-flask-app
+                        """
+                    }
+                }
             }
         }
     }
     post {
-        success { echo "✅ Deployment via Docker Successful!" }
-        failure { echo "❌ Deployment via Docker Failed!" }
+        success { echo "✅ Deployment via Docker/docker-compose/k8s Successful!" }
+        failure { echo "❌ Deployment via Docker/docker-compose/k8s Failed!" }
     }
 }
