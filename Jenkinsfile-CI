@@ -113,7 +113,7 @@ pipeline {
         }   
         stage('Push via docker-compose') {
             steps {
-                sh "docker compose build"
+                sh "docker compose push"
             }
         }   
         stage('Trivy Image Scan') {
