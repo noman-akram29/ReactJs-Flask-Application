@@ -6,7 +6,8 @@ pipeline {
     }
     environment {
         SCANNER_HOME = tool 'SonarQube-Scanner-Tool'
-        DOCKER_IMAGE = 'nomanakram29/reactjs-flask-app'
+        DOCKER_IMAGE_BACKEND  = "nomanakram29/reactjs-flask-backend"
+        DOCKER_IMAGE_FRONTEND = "nomanakram29/reactjs-flask-frontend"
         IMAGE_TAG    = "${BUILD_NUMBER}"
     }
     stages {
@@ -88,13 +89,13 @@ pipeline {
         //         script {
         //             // Backend build
         //             def backend = docker.build(
-        //                 "nomanakram29/reactjs-flask-backend:${IMAGE_TAG}",
+        //                 "${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}",
         //                 "backend"
         //             )
 
         //             // Frontend build
         //             def frontend = docker.build(
-        //                 "nomanakram29/reactjs-flask-frontend:${IMAGE_TAG}",
+        //                 "${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG}",
         //                 "frontend"
         //             )
 
@@ -117,17 +118,17 @@ pipeline {
                 script {
                     sh '''
                         trivy image --format table -o trivy-backend-report.html \
-                        nomanakram29/reactjs-flask-backend:${IMAGE_TAG} || true
+                        ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} || true
 
                         trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
-                        nomanakram29/reactjs-flask-backend:${IMAGE_TAG} || true
+                        ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} || true
                     '''
                     sh '''
                         trivy image --format table -o trivy-frontend-report.html \
-                        nomanakram29/reactjs-flask-frontend:${IMAGE_TAG} || true
+                        ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} || true
 
                         trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
-                        nomanakram29/reactjs-flask-frontend:${IMAGE_TAG} || true
+                        ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} || true
                     '''
                 }
             }
@@ -143,14 +144,15 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: '*-report.html', allowEmptyArchive: true
-            sh "docker rmi ${DOCKER_IMAGE}:${IMAGE_TAG} || true"
-            sh "docker rmi ${DOCKER_IMAGE}:latest || true"
+            sh "docker rmi ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} || true"
+            sh "docker rmi ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} || true"
             cleanWs()
         }
 
         success {
             echo "✔ CI Pipeline PASSED"
-            echo "✔ Image pushed: ${DOCKER_IMAGE}:${IMAGE_TAG}"
+            echo "✔ Backend image pushed: ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}"
+            echo "✔ Frontend image pushed: ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG}"
             echo "Now open a Pull Request dev → main"
             echo "CD will deploy from the main branch"
         }
