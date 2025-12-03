@@ -148,8 +148,8 @@ pipeline {
 
 
                             echo "Applying Kubernetes manifests..."
-                            kubectl apply -f k8s-backend-deployment.yaml
-                            kubectl apply -f k8s-frontend-deployment.yaml
+                            kubectl apply -f k8s-backend-deployment.yml
+                            kubectl apply -f k8s-frontend-deployment.yml
 
                             echo "Waiting for backend rollout..."
                             kubectl rollout status deployment/flask-backend -n react-flask-app --timeout=120s
