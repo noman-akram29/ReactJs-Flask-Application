@@ -15,27 +15,43 @@ pipeline {
                 """
             }
         }
-        stage('Deploy via Docker') {
-            steps {
-                echo "Stopping existing containers..."
-                sh """
-                    docker stop flask-backend || true
-                    docker rm flask-backend || true
-                    docker stop react-frontend || true
-                    docker rm react-frontend || true
-                """
-                echo "Running new containers..."
-                sh """
-                    docker run -d --name flask-backend -p 5000:5000 \
-                        -e FLASK_ENV=production \
-                        -e JWT_SECRET_KEY=super-secret \
-                        -e SECRET_KEY=super-secret \
-                        ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}
+        // stage('Deploy via Docker') {
+        //     steps {
+        //         echo "Stopping existing containers..."
+        //         sh """
+        //             docker stop flask-backend || true
+        //             docker rm flask-backend || true
+        //             docker stop react-frontend || true
+        //             docker rm react-frontend || true
+        //         """
+        //         echo "Running new containers..."
+        //         sh """
+        //             docker run -d --name flask-backend -p 5000:5000 \
+        //                 -e FLASK_ENV=production \
+        //                 -e JWT_SECRET_KEY=super-secret \
+        //                 -e SECRET_KEY=super-secret \
+        //                 ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}
 
-                    docker run -d --name react-frontend -p 5173:5173 \
-                        --link flask-backend:backend \
-                        ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG}
-                """
+        //             docker run -d --name react-frontend -p 5173:5173 \
+        //                 --link flask-backend:backend \
+        //                 ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG}
+        //         """
+        //     }
+        // }
+        stage('Deploy via docker-compose') {
+            steps {
+                echo "Stopping existing docker-compose services (if any)..."
+                sh "docker compose down || true"
+
+                echo "Starting services via docker-compose..."
+                sh "docker compose up -d"
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo "Checking running containers..."
+                sh "docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'"
             }
         }
     }
