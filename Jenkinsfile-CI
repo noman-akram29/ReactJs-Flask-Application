@@ -128,13 +128,13 @@ pipeline {
                     }
 
                     // Second: Harbor
-                    withDockerRegistry([credentialsId: 'Harbor-Token-for-Jenkins', url: 'http://98.81.99.88']) {
+                    withDockerRegistry([credentialsId: 'Harbor-Token-for-Jenkins', url: 'https://44.221.43.41']) {
                         sh """
-                            docker tag ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} 98.81.99.88/react-flask-app/reactjs-flask-backend:${IMAGE_TAG}
-                            docker tag ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} 98.81.99.88/react-flask-app/reactjs-flask-frontend:${IMAGE_TAG}
+                            docker tag ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} 44.221.43.41/react-flask-app/reactjs-flask-backend:${IMAGE_TAG}
+                            docker tag ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} 44.221.43.41/react-flask-app/reactjs-flask-frontend:${IMAGE_TAG}
 
-                            docker push 98.81.99.88/react-flask-app/reactjs-flask-backend:${IMAGE_TAG}
-                            docker push 98.81.99.88/react-flask-app/reactjs-flask-frontend:${IMAGE_TAG}
+                            docker push 44.221.43.41/react-flask-app/reactjs-flask-backend:${IMAGE_TAG}
+                            docker push 44.221.43.41/react-flask-app/reactjs-flask-frontend:${IMAGE_TAG}
                         """
                     }
                 }
