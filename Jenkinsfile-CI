@@ -9,8 +9,7 @@ pipeline {
         DOCKER_IMAGE_BACKEND  = "nomanakram29/reactjs-flask-backend"
         DOCKER_IMAGE_FRONTEND = "nomanakram29/reactjs-flask-frontend"
         IMAGE_TAG    = "latest"
-        HARBOR_REGISTRY = "98.92.31.64"    // Use env var for registry
-        HARBOR_REGISTRY_2 = "3.227.12.28"    // Use env var for registry
+        HARBOR_REGISTRY = "44.221.60.235"    // Use env var for registry
         HARBOR_PROJECT = "react-flask-app"
     }
     stages {
@@ -138,15 +137,6 @@ pipeline {
 
                             docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-backend:${IMAGE_TAG}
                             docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-frontend:${IMAGE_TAG}
-                        """
-                    }
-                    withDockerRegistry([credentialsId: 'Harbor-2-Token-for-Jenkins', url: "https://${HARBOR_REGISTRY_2}"]) {
-                        sh """
-                            docker tag ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} ${HARBOR_REGISTRY_2}/${HARBOR_PROJECT}/reactjs-flask-backend:${IMAGE_TAG}
-                            docker tag ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} ${HARBOR_REGISTRY_2}/${HARBOR_PROJECT}/reactjs-flask-frontend:${IMAGE_TAG}
-
-                            docker push ${HARBOR_REGISTRY_2}/${HARBOR_PROJECT}/reactjs-flask-backend:${IMAGE_TAG}
-                            docker push ${HARBOR_REGISTRY_2}/${HARBOR_PROJECT}/reactjs-flask-frontend:${IMAGE_TAG}
                         """
                     }
                 }
