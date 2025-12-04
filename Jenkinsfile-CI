@@ -130,7 +130,7 @@ pipeline {
                     }
 
                     // Second: Harbor
-                    withDockerRegistry([credentialsId: 'Harbor-Token-for-Jenkins', url: "https://${HARBOR_REGISTRY}"]) {
+                    withDockerRegistry([credentialsId: 'Harbor-Token-for-Jenkins-Admin', url: "https://${HARBOR_REGISTRY}"]) {
                         sh """
                             docker tag ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-backend:${IMAGE_TAG}
                             docker tag ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-frontend:${IMAGE_TAG}
