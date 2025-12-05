@@ -9,8 +9,8 @@ pipeline {
         DOCKER_IMAGE_BACKEND  = "nomanakram29/reactjs-flask-backend"
         DOCKER_IMAGE_FRONTEND = "nomanakram29/reactjs-flask-frontend"
         IMAGE_TAG    = "latest"
-        HARBOR_REGISTRY = "44.221.60.235"    // Use env var for registry
-        HARBOR_PROJECT = "react-flask-app"
+        // HARBOR_REGISTRY = "44.221.60.235"    // Use env var for registry
+        // HARBOR_PROJECT = "react-flask-app"
     }
     stages {
         stage('WorkSpace CleanUp') {
@@ -22,101 +22,101 @@ pipeline {
                 git branch: 'dev', credentialsId: 'GitHub-Token-for-Jenkins', url: 'https://github.com/noman-akram29/ReactJs-Flask-Application.git'
             }
         }
-        // stage('Install Frontend  Dependencies') {
-        //     steps {
-        //         dir('frontend') {
-        //             sh 'npm install'
-        //         }
-        //     }
-        // }
-        // stage('SonarQube Analysis') {
-        //     steps {
-        //         withSonarQubeEnv('SonarQube-Server') {
-        //             sh '''
-        //                 $SCANNER_HOME/bin/sonar-scanner \
-        //                 -Dsonar.projectKey=ReactJs-Flask-Application \
-        //                 -Dsonar.projectName="ReactJs-Flask-Application" \
-        //                 -Dsonar.sources=frontend,backend \
-        //                 -Dsonar.exclusions=frontend/node_modules/**,frontend/dist/**,backend/migrations/** \
-        //                 -Dsonar.sourceEncoding=UTF-8
-        //             '''
-        //         }
-        //     }
-        // }
-        // stage('Quality Gate Scan') {
-        //     steps {
-        //         timeout(time: 5, unit: 'MINUTES') {
-        //             waitForQualityGate abortPipeline: true, 
-        //                 credentialsId: 'SonarQube-Token-for-Jenkins'
-        //         }
-        //     }
-        // }
-        // stage('OWASP Dependency-Check Scan') {
-        //     steps {
-        //         dependencyCheck additionalArguments: '''
-        //             --scan ./frontend
-        //             --format ALL
-        //         ''', odcInstallation: 'Dependency-Check-12.1.9-Tool'
-        //         dependencyCheckPublisher pattern: 'dependency-check-report.html'
-        //     }
-        // }
-        // stage('Trivy FileSystem Scan') {
-        //     steps {
-        //         sh '''
-        //             trivy fs --exit-code 0 --no-progress --format table \
-        //             -o trivy-fs-report.html .
-        //             # trivy fs --exit-code 1 --no-progress --severity HIGH,CRITICAL .
-        //         '''
-        //     }
-        // }
-        // stage('Build & Push Docker Images') {
-        //     steps {
-        //         script {
-        //             // Backend build
-        //             def backend = docker.build(
-        //                 "${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}",
-        //                 "backend"
-        //             )
+        stage('Install Frontend  Dependencies') {
+            steps {
+                dir('frontend') {
+                    sh 'npm install'
+                }
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube-Server') {
+                    sh '''
+                        $SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectKey=ReactJs-Flask-Application \
+                        -Dsonar.projectName="ReactJs-Flask-Application" \
+                        -Dsonar.sources=frontend,backend \
+                        -Dsonar.exclusions=frontend/node_modules/**,frontend/dist/**,backend/migrations/** \
+                        -Dsonar.sourceEncoding=UTF-8
+                    '''
+                }
+            }
+        }
+        stage('Quality Gate Scan') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true, 
+                        credentialsId: 'SonarQube-Token-for-Jenkins'
+                }
+            }
+        }
+        stage('OWASP Dependency-Check Scan') {
+            steps {
+                dependencyCheck additionalArguments: '''
+                    --scan ./frontend
+                    --format ALL
+                ''', odcInstallation: 'Dependency-Check-12.1.9-Tool'
+                dependencyCheckPublisher pattern: 'dependency-check-report.html'
+            }
+        }
+        stage('Trivy FileSystem Scan') {
+            steps {
+                sh '''
+                    trivy fs --exit-code 0 --no-progress --format table \
+                    -o trivy-fs-report.html .
+                    # trivy fs --exit-code 1 --no-progress --severity HIGH,CRITICAL .
+                '''
+            }
+        }
+        stage('Build & Push Docker Images') {
+            steps {
+                script {
+                    // Backend build
+                    def backend = docker.build(
+                        "${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}",
+                        "backend"
+                    )
 
-        //             // Frontend build
-        //             def frontend = docker.build(
-        //                 "${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG}",
-        //                 "frontend"
-        //             )
+                    // Frontend build
+                    def frontend = docker.build(
+                        "${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG}",
+                        "frontend"
+                    )
 
-        //             docker.withRegistry('', 'DockerHub-Token-for-Jenkins') {
-        //                 backend.push()
-        //                 frontend.push()
-        //             }
-        //         }
-        //     }
-        // }
+                    docker.withRegistry('', 'DockerHub-Token-for-Jenkins') {
+                        backend.push()
+                        frontend.push()
+                    }
+                }
+            }
+        }
         stage('Build via docker-compose') {
             steps {
                 sh "docker compose build"
             }
         }
 
-        // stage('Trivy Image Scan') {
-        //     steps {
-        //         script {
-        //             sh '''
-        //                 trivy image --format table -o trivy-backend-report.html \
-        //                 ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} || true
+        stage('Trivy Image Scan') {
+            steps {
+                script {
+                    sh '''
+                        trivy image --format table -o trivy-backend-report.html \
+                        ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} || true
 
-        //                 trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
-        //                 ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} || true
-        //             '''
-        //             sh '''
-        //                 trivy image --format table -o trivy-frontend-report.html \
-        //                 ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} || true
+                        trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
+                        ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} || true
+                    '''
+                    sh '''
+                        trivy image --format table -o trivy-frontend-report.html \
+                        ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} || true
 
-        //                 trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
-        //                 ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} || true
-        //             '''
-        //         }
-        //     }
-        // }
+                        trivy image --exit-code 0 --no-progress --severity HIGH,CRITICAL \
+                        ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG} || true
+                    '''
+                }
+            }
+        }
         stage('Push Images to Docker Hub & Harbor') {
             steps {
                 script {
@@ -130,15 +130,15 @@ pipeline {
                     }
 
                     // Second: Harbor
-                    withDockerRegistry([credentialsId: 'Harbor-Token-for-Jenkins', url: "https://${HARBOR_REGISTRY}"]) {
-                        sh """
-                            docker tag ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-backend:${IMAGE_TAG}
-                            docker tag ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-frontend:${IMAGE_TAG}
+                    // withDockerRegistry([credentialsId: 'Harbor-Token-for-Jenkins', url: "https://${HARBOR_REGISTRY}"]) {
+                    //     sh """
+                    //         docker tag ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-backend:${IMAGE_TAG}
+                    //         docker tag ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG} ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-frontend:${IMAGE_TAG}
 
-                            docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-backend:${IMAGE_TAG}
-                            docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-frontend:${IMAGE_TAG}
-                        """
-                    }
+                    //         docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-backend:${IMAGE_TAG}
+                    //         docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/reactjs-flask-frontend:${IMAGE_TAG}
+                    //     """
+                    // }
                 }
             }
         }
