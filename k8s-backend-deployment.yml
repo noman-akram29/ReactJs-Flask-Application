@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: flask-backend
-          image: nomanakram29/reactjs-flask-backend:latest  
+          image: 724379224148.dkr.ecr.us-east-1.amazonaws.com/reactjs-flask-app-backend:latest  
           ports:
             - containerPort: 5000
           env:
